@@ -7,7 +7,7 @@ Type=simple
 User=flipdot
 WorkingDirectory=/home/flipdot/iod/rainbow-snakes
 Environment=PYTHONUNBUFFERED=1
-ExecStart=/home/flipdot/iod/iod-rainbow-snakes/iod-rainbow-snakes.py
+ExecStart=/home/flipdot/iod/rainbow-snakes/rainbow-snakes.py
 
 [Install]
 WantedBy=multi-user.target
