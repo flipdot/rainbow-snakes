@@ -48,7 +48,7 @@ def kinetic_init(hues=USERS, positions=[], forces=[]):
         # Force
         pixel['f'] = (random.random() - .5) * 2
         # Sine flicker
-        pixel['s'] = bool(random.getrandbits(1))
+        pixel['s'] = False
         kinetic_pixels.append(pixel)
     return kinetic_pixels
 
