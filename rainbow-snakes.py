@@ -19,6 +19,10 @@ LED_PORT = 7777
 LED_SERVER = (LED_HOST, LED_PORT)
 COLOR_CHANNELS = 3
 
+FORCE_FACTOR = 0.1337
+TIMESTEP_LEN = 0.001
+ENERGY_IN_SYSTEM = 0.42 # E = m*c^2
+
 USERS = []
 for i in range(5):
     USERS.append(int(random.random() * 360))
@@ -45,8 +49,8 @@ def kinetic_init(hues=USERS, positions=[], forces=[]):
         pixel['c'] = colorsys.hsv_to_rgb(h / 360, 1, 1)
         # Position
         pixel['p'] = random.random()
-        # Force
-        pixel['f'] = (random.random() - .5) * 2
+        # Initial Velocity
+        pixel['v'] = (random.random() - .5) * 2
         # Sine flicker
         pixel['s'] = False
         kinetic_pixels.append(pixel)
@@ -55,28 +59,36 @@ def kinetic_init(hues=USERS, positions=[], forces=[]):
 
 def kinetic_step(kinetic_pixels):
     for pixel in kinetic_pixels:
+        # Electrostatic pushes / Forces between pixels
+        # Calculate new velocities
+        rs = [pixel['p'] - p['p'] for p in kinetic_pixels]
+        force = 0.0
+        for r in rs:
+            if abs(r) > 0.001:
+                force += FORCE_FACTOR / (r*r) * sign(r) # or any other force law [here electrostatic force, f(r)~1/r^2]
+        acc = force / 1 # = force / <mass of pixel>
+        pixel['v'] = pixel['v'] + acc * TIMESTEP_LEN
 
-        # Regular movement of pixel's individual force
-        f = sign(pixel['f']) *\
-            (abs(pixel['f']) * (MAX_FORCE - MIN_FORCE) + MIN_FORCE)
-        pixel['p'] = pixel['p'] + f
+    for pixel in kinetic_pixels:
+        # movement of pixels
+        pixel['p'] = pixel['p'] + pixel['v'] * TIMESTEP_LEN
 
-        # Gravitational pushes / Forces between pixels
-        # M = [pixel['p'] - p['p'] for p in kinetic_pixels]
-        # for m in M:
-        #     t = 1 - (m ** MAX_PUSH)
-        #     pixel['p'] = pixel['p'] + t.real + t.imag
-        #     print(m, pixel['p'])
-        # print()
-        # print(M, (M ** MAX_PUSH).real)
+    energy = 0.0
+    for pixel in kinetic_pixels:
+        energy += pixel['v'] * pixel['v'] * 1 # pixel['v'] * pixel['v'] * <mass of pivel>
+    normalization = ENERGY_IN_SYSTEM / energy
 
+    for pixel in kinetic_pixels:
+        pixel['v'] = pixel['v'] * normalization
+
+    for pixel in kinetic_pixels:
         # Bound checks
         if pixel['p'] < 0:
             pixel['p'] = pixel['p'] * -1
-            pixel['f'] = pixel['f'] * -1
+            pixel['v'] = pixel['v'] * -1
         if pixel['p'] > 1:
             pixel['p'] = 2 - pixel['p']
-            pixel['f'] = pixel['f'] * -1
+            pixel['v'] = pixel['v'] * -1
     return kinetic_pixels
 
 
