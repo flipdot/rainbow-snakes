@@ -16,6 +16,7 @@ LED_PORT = 7777
 LED_SERVER = (LED_HOST, LED_PORT)
 COLOR_CHANNELS = 3
 
+PIXEL_MASS = 1
 FORCE_FACTOR = 0.05
 TIMESTEP_LEN = 0.001
 ENERGY_IN_SYSTEM = 4.2
@@ -62,17 +63,19 @@ def kinetic_step(kinetic_pixels):
         force = 0.0
         for r in rs:
             if abs(r) > 0.001:
-                force += FORCE_FACTOR / (r*r) * sign(r) # or any other force law [here electrostatic force, f(r)~1/r^2]
-        acc = force / 1 # = force / <mass of pixel>
+                # Electrostatic force: f(r)~1/r^2
+                # Could be replaced by any other force law
+                force += FORCE_FACTOR / (r*r) * sign(r)
+        acc = force / PIXEL_MASS
         pixel['v'] = pixel['v'] + acc * TIMESTEP_LEN
 
     for pixel in kinetic_pixels:
-        # movement of pixels
+        # Movement of pixels
         pixel['p'] = pixel['p'] + pixel['v'] * TIMESTEP_LEN
 
     energy = 0.0
     for pixel in kinetic_pixels:
-        energy += pixel['v'] * pixel['v'] * 1 # pixel['v'] * pixel['v'] * <mass of pivel>
+        energy += pixel['v'] * pixel['v'] * PIXEL_MASS
     normalization = ENERGY_IN_SYSTEM / energy
 
     for pixel in kinetic_pixels:
