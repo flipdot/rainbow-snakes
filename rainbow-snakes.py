@@ -137,10 +137,13 @@ if __name__ == '__main__':
     ts = 0
     kinetic_pixels = kinetic_init()
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    current_colors = colors = [0, 0, 0] + [0] * LED_COUNT * COLOR_CHANNELS
     while True:
         kinetic_pixels = kinetic_step(kinetic_pixels)
-        colors = kinetic_colors(kinetic_pixels, ts)
-        sock.sendto(bytes(colors), LED_SERVER)
+        new_colors = kinetic_colors(kinetic_pixels, ts)
+        for idx, color in enumerate(new_colors):
+            current_colors[idx] = int(0.9 * float(current_colors[idx]) + 0.1 * float(color))
+        sock.sendto(bytes(current_colors), LED_SERVER)
 
         time.sleep(FRAME_SLEEP)
         ts += 1
