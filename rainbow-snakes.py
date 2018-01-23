@@ -20,6 +20,7 @@ PIXEL_MASS = 1
 FORCE_FACTOR = 0.05
 TIMESTEP_LEN = 0.001
 ENERGY_IN_SYSTEM = 4.2
+POT_ENERGY_FACTOR = 0.02
 
 USERS = []
 for i in range(5):
@@ -75,8 +76,16 @@ def kinetic_step(kinetic_pixels):
 
     energy = 0.0
     for pixel in kinetic_pixels:
+        # Kinetic energy
         energy += pixel['v'] * pixel['v'] * PIXEL_MASS
-    normalization = ENERGY_IN_SYSTEM / energy
+        # Potential energy
+        for p2 in kinetic_pixels:
+            r_ij = float(pixel['p'] - p2['p'])
+            # print("r_ij=", r_ij)
+            if abs(r_ij) > 0.001:
+                energy += abs(POT_ENERGY_FACTOR / r_ij)
+    # print("energy: ", energy)
+    normalization = 0.8*ENERGY_IN_SYSTEM / energy + 0.2
 
     for pixel in kinetic_pixels:
         pixel['v'] = pixel['v'] * normalization
