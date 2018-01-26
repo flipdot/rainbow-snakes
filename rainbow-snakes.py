@@ -19,8 +19,8 @@ COLOR_CHANNELS = 3
 PIXEL_MASS = 1
 FORCE_FACTOR = 0.05
 TIMESTEP_LEN = 0.001
-ENERGY_IN_SYSTEM = 4.2
-POT_ENERGY_FACTOR = 0.02
+ENERGY_PER_PARTICLE = 1.0
+POT_ENERGY_FACTOR = 0.01# lower for more than 20 particles
 
 USERS = []
 for i in range(5):
@@ -85,7 +85,7 @@ def kinetic_step(kinetic_pixels):
             if abs(r_ij) > 0.001:
                 energy += abs(POT_ENERGY_FACTOR / r_ij)
     # print("energy: ", energy)
-    normalization = 0.8*ENERGY_IN_SYSTEM / energy + 0.2
+    normalization = 0.8*(ENERGY_PER_PARTICLE * len(kinetic_pixels)) / energy + 0.2
 
     for pixel in kinetic_pixels:
         pixel['v'] = pixel['v'] * normalization
