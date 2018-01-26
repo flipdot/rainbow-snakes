@@ -152,7 +152,10 @@ if __name__ == '__main__':
         new_colors = kinetic_colors(kinetic_pixels, ts)
         for idx, color in enumerate(new_colors):
             current_colors[idx] = int(0.9 * float(current_colors[idx]) + 0.1 * float(color))
-        sock.sendto(bytes(current_colors), LED_SERVER)
+        try:
+            sock.sendto(bytes(current_colors), LED_SERVER)
+        except:
+            print("network error")
 
         time.sleep(FRAME_SLEEP)
         ts += 1
