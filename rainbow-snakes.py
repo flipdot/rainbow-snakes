@@ -22,6 +22,17 @@ TIMESTEP_LEN = 0.001
 ENERGY_PER_PARTICLE = 1.0
 POT_ENERGY_FACTOR = 0.01# lower for more than 20 particles
 
+ANIMATIONS = []
+FOO = 9
+for i in range(FOO):
+    anim = {}
+    anim['p'] = 1.0*i/FOO
+    anim['i'] = i
+    def test_anim(colors,t,params):
+        colors[int((t*3+anim['i'] + 3*LED_COUNT*params['p']) % (3*LED_COUNT))] = 127
+    anim['f'] = test_anim
+    ANIMATIONS.append(anim)
+
 USERS = []
 for i in range(5):
     USERS.append(int(random.random() * 360))
@@ -147,9 +158,16 @@ if __name__ == '__main__':
     kinetic_pixels = kinetic_init()
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     current_colors = colors = [0, 0, 0] + [0] * LED_COUNT * COLOR_CHANNELS
+    # foo
+    current_colors[4] = 139# r
+    current_colors[3] = 69 # g
+    current_colors[5] = 19 # b
     while True:
         kinetic_pixels = kinetic_step(kinetic_pixels)
         new_colors = kinetic_colors(kinetic_pixels, ts)
+        for anim in ANIMATIONS:
+            anim['f'](new_colors, ts - anim.get('starttime', 0), anim)
+        ANIMATIONS = filter(lambda a: not a.get('finished', False), ANIMATIONS)
         for idx, color in enumerate(new_colors):
             current_colors[idx] = int(0.9 * float(current_colors[idx]) + 0.1 * float(color))
         try:
