@@ -157,13 +157,13 @@ if __name__ == '__main__':
     ts = 0
     kinetic_pixels = kinetic_init()
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    current_colors = colors = [0, 0, 0] + [0] * LED_COUNT * COLOR_CHANNELS
+    current_colors = [0, 0, 0] + [0] * LED_COUNT * COLOR_CHANNELS
     while True:
         kinetic_pixels = kinetic_step(kinetic_pixels)
         new_colors = kinetic_colors(kinetic_pixels, ts)
         for anim in ANIMATIONS:
             anim['f'](new_colors, ts - anim.get('starttime', 0), anim)
-        ANIMATIONS = filter(lambda a: not a.get('finished', False), ANIMATIONS)
+        ANIMATIONS = list(filter(lambda a: not a.get('finished', False), ANIMATIONS))
         for idx, color in enumerate(new_colors):
             current_colors[idx] = int(0.9 * float(current_colors[idx]) + 0.1 * float(color))
         try:
