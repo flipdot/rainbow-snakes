@@ -158,10 +158,6 @@ if __name__ == '__main__':
     kinetic_pixels = kinetic_init()
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     current_colors = colors = [0, 0, 0] + [0] * LED_COUNT * COLOR_CHANNELS
-    # foo
-    current_colors[4] = 139# r
-    current_colors[3] = 69 # g
-    current_colors[5] = 19 # b
     while True:
         kinetic_pixels = kinetic_step(kinetic_pixels)
         new_colors = kinetic_colors(kinetic_pixels, ts)
