@@ -172,8 +172,8 @@ if __name__ == '__main__':
             current_colors[idx] = int(0.9 * float(current_colors[idx]) + 0.1 * float(color))
         try:
             sock.sendto(bytes(current_colors), LED_SERVER)
-        except:
-            print("network error")
+        except socket.gaierror:
+            pass
 
         time.sleep(FRAME_SLEEP)
         ts += 1
