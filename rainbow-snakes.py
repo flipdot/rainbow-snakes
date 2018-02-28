@@ -6,6 +6,9 @@ import math
 import random
 import socket
 import time
+import yaml
+
+import paho.mqtt.client as mqtt
 
 MAX_BRIGHTNESS = 250
 FRAME_SLEEP = .01
@@ -15,6 +18,11 @@ LED_HOST = "esp-sofas.fd"
 LED_PORT = 7777
 LED_SERVER = (LED_HOST, LED_PORT)
 COLOR_CHANNELS = 3
+
+DEBUG = False
+
+MQTT_HOST = "mqtt.fd"
+MQTT_TOPIC = "sensors/all/users"
 
 PIXEL_MASS = 1
 FORCE_FACTOR = 0.05
@@ -37,9 +45,100 @@ USERS = []
 for i in range(5):
     USERS.append(int(random.random() * 360))
 
+kinetic_pixels = []
+
 
 def sign(x):
     return (1, -1)[x < 0]
+
+
+def on_connect(client, userdata, flags, result):
+    client.subscribe(MQTT_TOPIC)
+
+
+def on_message(client, userdata, message):
+    # Compare list of hues with list of 'kinetic pixels'
+    # which is actually a list of dicts
+    global kinetic_pixels
+
+    msg_content = yaml.load(message.payload)
+    msg_hues = msg_content['known']['hues']
+    msg_colors = [h_to_rgb(h) for h in msg_hues]
+
+    # Count colors in mqtt message
+    msg_hue_counts = {}
+    for c in msg_colors:
+        h = rgb_to_h(c)
+        if h in msg_hue_counts:
+            msg_hue_counts[h] += 1
+        else:
+            msg_hue_counts[h] = 1
+
+    dict_hue_counts = {}
+    for pixel in kinetic_pixels:
+        h = rgb_to_h(pixel['c'])
+        if h in dict_hue_counts:
+            dict_hue_counts[h] += 1
+        else:
+            dict_hue_counts[h] = 1
+
+    diff_hues = {}
+    for k, v2 in msg_hue_counts.items():
+        try:
+            v1 = dict_hue_counts[k]
+        except:
+            v1 = 0
+        diff_hues[k] = v2
+
+    for k, v in dict_hue_counts.items():
+        if not k in diff_hues:
+            diff_hues[k] = 0
+
+    # Use counted hues to take over already present pixels
+    new_pixels = []
+    for pixel in kinetic_pixels:
+        h = rgb_to_h(pixel['c'])
+        d = diff_hues[h]
+        if d <= 0:
+            continue
+        # Disable sine flicker, because pixel is old
+        pixel['s'] = False
+        new_pixels.append(pixel)
+        diff_hues[h] -= 1
+
+    # Create new pixels for colors not yet found
+    for k, v in diff_hues.items():
+        if v <= 0:
+            continue
+        for i in range(v):
+            pixel = {}
+            # Color
+            pixel['c'] = h_to_rgb(k)
+            # Position
+            pixel['p'] = random.random()
+            # Initial Velocity
+            pixel['v'] = (random.random() - .5) * 2
+            # Enable sine flicker, because pixel is new
+            pixel['s'] = True
+            new_pixels.append(pixel)
+
+    kinetic_pixels = new_pixels
+    if (DEBUG):
+        print()
+        for pixel in kinetic_pixels:
+            print("{:3} {}".format(
+                rgb_to_h(pixel['c']),
+                "NEW" if pixel['s'] else ""))
+
+
+def rgb_to_h(rgb):
+    # TODO Fix rounding errors
+    return math.ceil(colorsys.rgb_to_hsv(rgb[0], rgb[1], rgb[2])[0] * 360)
+
+
+def h_to_rgb(h):
+    # TODO Fix rounding errors
+    return colorsys.hsv_to_rgb(int(h) / 360, 1, 1)
 
 
 def kinetic_init(hues=USERS, positions=[], forces=[]):
@@ -56,7 +155,7 @@ def kinetic_init(hues=USERS, positions=[], forces=[]):
     for h, p, f in zip(hues, positions, forces):
         pixel = {}
         # Color
-        pixel['c'] = colorsys.hsv_to_rgb(h / 360, 1, 1)
+        pixel['c'] = h_to_rgb(h)
         # Position
         pixel['p'] = random.random()
         # Initial Velocity
@@ -68,6 +167,9 @@ def kinetic_init(hues=USERS, positions=[], forces=[]):
 
 
 def kinetic_step(kinetic_pixels):
+    if len(kinetic_pixels) == 0:
+        return kinetic_pixels
+
     for pixel in kinetic_pixels:
         # Electrostatic pushes / Forces between pixels
         # Calculate new velocities
@@ -158,6 +260,15 @@ if __name__ == '__main__':
     kinetic_pixels = kinetic_init()
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     current_colors = [0, 0, 0] + [0] * LED_COUNT * COLOR_CHANNELS
+
+    # Initialize MQTT client
+    client = mqtt.Client()
+    client.on_connect = on_connect
+    client.on_message = on_message
+    client.loop_start()
+
+    client.connect(MQTT_HOST)
+
     while True:
         kinetic_pixels = kinetic_step(kinetic_pixels)
         new_colors = kinetic_colors(kinetic_pixels, ts)
@@ -170,6 +281,7 @@ if __name__ == '__main__':
             sock.sendto(bytes(current_colors), LED_SERVER)
         except socket.gaierror:
             pass
+        client.user_data_set({})
 
         time.sleep(FRAME_SLEEP)
         ts += 1
