@@ -31,7 +31,7 @@ ENERGY_PER_PARTICLE = 1.0
 POT_ENERGY_FACTOR = 0.01# lower for more than 20 particles
 
 ANIMATIONS = []
-FOO = 9
+FOO = 0
 for i in range(FOO):
     anim = {}
     anim['p'] = 1.0*i/FOO
