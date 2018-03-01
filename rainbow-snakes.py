@@ -20,6 +20,7 @@ LED_SERVER = (LED_HOST, LED_PORT)
 COLOR_CHANNELS = 3
 
 DEBUG = False
+RECONNECT_SLEEP = 10
 
 MQTT_HOST = "mqtt.fd"
 MQTT_TOPIC = "sensors/all/users"
@@ -280,6 +281,7 @@ if __name__ == '__main__':
         try:
             sock.sendto(bytes(current_colors), LED_SERVER)
         except socket.gaierror:
+            time.sleep(RECONNECT_SLEEP)
             pass
         client.user_data_set({})
 
