@@ -19,7 +19,7 @@ LED_PORT = 7777
 LED_SERVER = (LED_HOST, LED_PORT)
 COLOR_CHANNELS = 3
 
-DEBUG = False
+DEBUG = True
 RECONNECT_SLEEP = 10
 
 MQTT_HOST = "mqtt.fd"
@@ -139,7 +139,7 @@ def rgb_to_h(rgb):
 
 def h_to_rgb(h):
     # TODO Fix rounding errors
-    return colorsys.hsv_to_rgb(int(h) / 360, 1, 1)
+    return colorsys.hsv_to_rgb((int(h) - 120) / 360 % 360, 1, 1)
 
 
 def kinetic_init(hues=USERS, positions=[], forces=[]):
